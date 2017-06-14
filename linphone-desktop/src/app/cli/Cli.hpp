@@ -54,6 +54,8 @@ public:
 
     void execute (const QHash<QString, QString> &args);
 
+    void executeUri(std::shared_ptr<linphone::Address> address);
+
     bool argNameExists (const QString &argName) {
       return mArgsScheme.contains(argName);
     }

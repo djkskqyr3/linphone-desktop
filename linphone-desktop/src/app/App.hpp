@@ -51,7 +51,7 @@ public:
 
   void initContentApp ();
 
-  QString getCommandArgument ();
+  QString getPositionalArgument ();
   void executeCommand (const QString &command);
 
   QQmlEngine *getEngine () {
@@ -113,10 +113,10 @@ private:
     return qVersion();
   }
 
-  QCommandLineParser *mParser = nullptr;
-
   QVariantList mAvailableLocales;
   QString mLocale;
+
+  QCommandLineParser *mParser = nullptr;
 
   QQmlApplicationEngine *mEngine = nullptr;
 

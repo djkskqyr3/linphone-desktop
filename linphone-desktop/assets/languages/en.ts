@@ -84,6 +84,10 @@
         <source>commandLineOptionVersion</source>
         <translation>show app version</translation>
     </message>
+    <message>
+        <source>commandLineOptionConfigArg</source>
+        <translation>file</translation>
+    </message>
 </context>
 <context>
     <name>AssistantAbstractView</name>
@@ -414,7 +418,23 @@ Server url not configured.</translation>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>showFunctionCall</source>
+        <source>callFunctionDescription</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>videoCallFunctionDescription</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>joinConferenceFunctionDescription</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>joinVideoConferenceFunctionDescription</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>initiateConferenceFunctionDescription</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

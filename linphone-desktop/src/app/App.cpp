@@ -40,6 +40,7 @@
 #include "providers/AvatarProvider.hpp"
 #include "providers/ThumbnailProvider.hpp"
 #include "translator/DefaultTranslator.hpp"
+#include "cli/Cli.hpp"
 
 #include "App.hpp"
 
@@ -209,10 +210,9 @@ void App::initContentApp () {
 
 // -----------------------------------------------------------------------------
 
-QString App::getCommandArgument () {
-  // TODO: Remove me when cmd option will be available.
-  return "";
-  // return mParser->value("cmd");
+QString App::getPositionalArgument () {
+  const QStringList &arguments = mParser.positionalArguments();
+  return arguments.empty() ? QString("") : arguments[0];
 }
 
 // -----------------------------------------------------------------------------
@@ -285,7 +285,6 @@ void App::createParser () {
 
   if (mParser)
     delete mParser;
-
   mParser = new QCommandLineParser();
 
   mParser->setApplicationDescription(tr("applicationDescription"));
@@ -527,11 +526,11 @@ void App::openAppAfterInit () {
     }
   }
 
-  // Execute command argument if needed.
+  // Execute positional argument if needed.
   {
-    const QString &commandArgument = getCommandArgument();
-    if (!commandArgument.isEmpty())
-      executeCommand(commandArgument);
+    const QString &positionalArgument = getPositionalArgument();
+    if (!positionalArgument.isEmpty())
+      executeCommand(positionalArgument);
   }
 }
 
@@ -543,3 +542,4 @@ void App::quit () {
 
   QApplication::quit();
 }
+

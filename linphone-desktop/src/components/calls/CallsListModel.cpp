@@ -140,7 +140,15 @@ void CallsListModel::terminateAllCalls () const {
 void CallsListModel::handleCallStateChanged (const shared_ptr<linphone::Call> &call, linphone::CallState state) {
   switch (state) {
     case linphone::CallStateIncomingReceived:
+      if(!call->getToHeader("method").empty())
+        qInfo() << QStringLiteral("----Header method----") << Utils::coreStringToAppString(call->getToHeader("method"));
+
+      addCall(call);
+      break;
     case linphone::CallStateOutgoingInit:
+      if(!call->getToAddress()->getHeader("method").empty())
+        qInfo() << QStringLiteral("----Header method----") << Utils::coreStringToAppString(call->getToAddress()->getHeader("method"));
+
       addCall(call);
       break;
 

@@ -21,6 +21,7 @@
  */
 
 #include <stdexcept>
+#include <linphone++/linphone.hh>
 
 #include "../../components/core/CoreManager.hpp"
 #include "../../utils/Utils.hpp"
@@ -29,6 +30,7 @@
 #include "Cli.hpp"
 
 using namespace std;
+
 
 // =============================================================================
 // API.
@@ -40,7 +42,22 @@ static void cliShow (const QHash<QString, QString> &) {
 }
 
 static void cliCall (const QHash<QString, QString> &args) {
-  CoreManager::getInstance()->getCallsListModel()->launchAudioCall(args["sipAddress"]);
+  CoreManager::getInstance()->getCallsListModel()->launchAudioCall(args["sip-address"]);
+}
+
+static void cliJoinConference (const QHash<QString, QString> &args) {
+  CoreManager::getInstance()->getCallsListModel()->launchAudioCall(args["sip-address"]);
+}
+
+static void cliInitiateConference (const QHash<QString, QString> &args) {
+  std::shared_ptr<linphone::Conference> conf = CoreManager::getInstance()->getCore()->createConferenceWithParams(
+        CoreManager::getInstance()->getCore()->createConferenceParams()
+        );
+  std::pair<std::string,std::shared_ptr<linphone::Conference>> aa;
+  aa.first = Utils::appStringToCoreString(args["conferenceID"]);
+  aa.second = conf ;
+
+  //Create a Conference with conferenceID header (in args["conferenceID"]) and set the vew to the "waiting call vew"
 }
 
 // =============================================================================
@@ -54,7 +71,7 @@ Cli::Command::Command (const QString &functionName, const QString &description, 
 void Cli::Command::execute (const QHash<QString, QString> &args) {
   for (const auto &argName : mArgsScheme.keys()) {
     if (!args.contains(argName) && !mArgsScheme[argName].isOptional) {
-      qWarning() << QStringLiteral("Missing argument for command: `%1 (%2)`.")
+      qWarning() << QStringLiteral("Missing unoptional argument for command: `%1 (%2)`.")
         .arg(mFunctionName).arg(argName);
       return;
     }
@@ -62,6 +79,25 @@ void Cli::Command::execute (const QHash<QString, QString> &args) {
 
   (*mFunction)(args);
 }
+
+void Cli::Command::executeUri(shared_ptr<linphone::Address> address){
+
+  QHash<QString, QString> args;
+  args["sip-address"] = Utils::coreStringToAppString(address->asString());
+  for (const auto &argName : mArgsScheme.keys()) {
+    if(Utils::appStringToCoreString(argName)!="sipAddress"){
+      if(address->getHeader(Utils::appStringToCoreString(argName)).empty() &&
+         !mArgsScheme[argName].isOptional) {
+        qWarning() << QStringLiteral("Missing unoptional argument for method: `%1 (%2)`.")
+            .arg(mFunctionName).arg(argName);
+        return;
+      }
+      args[argName] = Utils::coreStringToAppString(address->getHeader(Utils::appStringToCoreString(argName)));
+    }
+  }
+  (*mFunction)(args);
+}
+
 
 // =============================================================================
 
@@ -73,9 +109,16 @@ QRegExp Cli::mRegExpFunctionName("^\\s*(\\w+)\\s*");
 Cli::Cli (QObject *parent) : QObject(parent) {
   addCommand("show", tr("showFunctionDescription"), ::cliShow);
   addCommand("call", tr("showFunctionCall"), ::cliCall, {
-    { "sip-address", {} }
+    { "sip-address" }
+  });
+  addCommand("join-conference", tr("joinConferenceFunctionDescription"), ::cliJoinConference, {
+    { "sip-address" }, { "conference-id" }
+  });
+  addCommand("initiateConference", tr("initiateConferenceFunctionDescription"), ::cliInitiateConference, {
+    { "sip-address" }, { "conference-id" }
   });
 }
+
 
 // -----------------------------------------------------------------------------
 
@@ -89,21 +132,41 @@ void Cli::addCommand (const QString &functionName, const QString &description, F
 // -----------------------------------------------------------------------------
 
 void Cli::executeCommand (const QString &command) noexcept {
+
+  //tests if the command is a sip uri.
+  shared_ptr<linphone::Address> address = linphone::Factory::get()->createAddress(Utils::appStringToCoreString(command));
+  if (address && (address->getScheme()=="sip" || address->getScheme()=="sip-linphone")) {
+
+    const QString methodName = Utils::coreStringToAppString(address->getHeader("method"));
+    if (methodName.isEmpty() || !mCommands.contains(methodName)){
+      qWarning() << QStringLiteral("method unknown");
+      return;
+    }
+
+    //calls the appropriate function of the method
+    mCommands[methodName].executeUri(address);
+    return;
+  }
+
+  if (address && !address->getScheme().empty()){
+    qWarning() << QStringLiteral("bad uri protocol, different from sip or sip-linphone: `%1`").arg(Utils::coreStringToAppString(address->getScheme()));
+    return;
+  }
+
   const QString &functionName = parseFunctionName(command);
   if (functionName.isEmpty())
     return;
 
   bool soFarSoGood;
   const QHash<QString, QString> &args = parseArgs(command, functionName, soFarSoGood);
-  if (!soFarSoGood)
-    return;
-
-  mCommands[functionName].execute(args);
+  if (soFarSoGood)
+    mCommands[functionName].execute(args);
 }
 
 // -----------------------------------------------------------------------------
 
 const QString Cli::parseFunctionName (const QString &command) noexcept {
+
   mRegExpFunctionName.indexIn(command);
 
   const QStringList &texts = mRegExpFunctionName.capturedTexts();
@@ -121,12 +184,14 @@ const QString Cli::parseFunctionName (const QString &command) noexcept {
   return functionName;
 }
 
+
 const QHash<QString, QString> Cli::parseArgs (const QString &command, const QString functionName, bool &soFarSoGood) noexcept {
+
   QHash<QString, QString> args;
   int pos = 0;
 
   soFarSoGood = true;
-
+  args["method"] = functionName;
   while ((pos = mRegExpArgs.indexIn(command, pos)) != -1) {
     pos += mRegExpArgs.matchedLength();
     if (!mCommands[functionName].argNameExists(mRegExpArgs.cap(1))) {
