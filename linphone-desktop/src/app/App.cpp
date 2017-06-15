@@ -211,7 +211,7 @@ void App::initContentApp () {
 // -----------------------------------------------------------------------------
 
 QString App::getPositionalArgument () {
-  const QStringList &arguments = mParser.positionalArguments();
+  const QStringList &arguments = mParser->positionalArguments();
   return arguments.empty() ? QString("") : arguments[0];
 }
 

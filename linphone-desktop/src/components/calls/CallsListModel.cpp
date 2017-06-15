@@ -140,11 +140,35 @@ void CallsListModel::terminateAllCalls () const {
 void CallsListModel::handleCallStateChanged (const shared_ptr<linphone::Call> &call, linphone::CallState state) {
   switch (state) {
     case linphone::CallStateIncomingReceived:
-      if(!call->getToHeader("method").empty())
+//_______________________________________________________________________________________________________________________________________
+      if (!call->getToHeader("method").empty()){
+        shared_ptr<linphone::Core> core = CoreManager::getInstance()->getCore();
         qInfo() << QStringLiteral("----Header method----") << Utils::coreStringToAppString(call->getToHeader("method"));
-
+        if (call->getToHeader("method")=="joinConference"){
+          if (core->getConference()==NULL) { //TODO change this condition, use isInConference() (need to be initiate)
+            qWarning() << QStringLiteral("Not in a conference,responding to joinConference as a call.");
+            addCall(call);
+            break;
+          }
+          std::shared_ptr<linphone::Conference> currentConference = core->getConference();
+          qInfo() << QStringLiteral("conference id asked: '%1'").arg(Utils::coreStringToAppString(call->getToHeader("conference-id")));
+          qWarning() << QStringLiteral("current conference id: '%1'").arg(Utils::coreStringToAppString(currentConference->getId()));
+          if(currentConference->getId().empty() || currentConference->getId()!=call->getToHeader("conference-id")){
+            qWarning() << QStringLiteral("trying to join conference with invalid conference-id").arg(Utils::coreStringToAppString(call->getToHeader("conference-id")));
+            qWarning() << QStringLiteral("join-conference managed as a call ");
+            addCall(call);
+            break;
+          }
+          qInfo() << QStringLiteral("join conference: `%1`").arg(Utils::coreStringToAppString(currentConference->getId()));
+          addCall(call);
+          break;
+          //TODO automatically add the call to the conference
+          //accept call, if this is the first, answer by a call, else add it to the conference.
+        }
+      }
       addCall(call);
       break;
+//_______________________________________________________________________________________________________________________________________
     case linphone::CallStateOutgoingInit:
       if(!call->getToAddress()->getHeader("method").empty())
         qInfo() << QStringLiteral("----Header method----") << Utils::coreStringToAppString(call->getToAddress()->getHeader("method"));
