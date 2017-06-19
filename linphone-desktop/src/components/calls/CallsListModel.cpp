@@ -147,9 +147,9 @@ void CallsListModel::handleCallStateChanged (const shared_ptr<linphone::Call> &c
       if (!call->getToHeader("method").empty()) {
         shared_ptr<linphone::Core> core = CoreManager::getInstance()->getCore();
         qInfo() << QStringLiteral("----Header method----") << Utils::coreStringToAppString(call->getToHeader("method"));
-        if (call->getToHeader("method")=="joinConference") {
+        if (call->getToHeader("method")=="join-conference") {
           if (core->getConference()==NULL) { //TODO change this condition, use isInConference() (need to be initiate)
-            qWarning() << QStringLiteral("Not in a conference,responding to joinConference as a call.");
+            qWarning() << QStringLiteral("Not in a conference,responding to join-conference as a call.");
             break;
           }
           shared_ptr<linphone::Conference> currentConference = core->getConference();
