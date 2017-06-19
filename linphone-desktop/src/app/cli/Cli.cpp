@@ -50,25 +50,43 @@ static void cliJoinConference (const QHash<QString, QString> &args) {
 }
 
 static void cliInitiateConference (const QHash<QString, QString> &args) {
-  std::shared_ptr<linphone::Core> core= CoreManager::getInstance()->getCore();
-  std::shared_ptr<linphone::Conference> conference;
+  shared_ptr<linphone::Core> core= CoreManager::getInstance()->getCore();
+  string identity = core->getIdentity();
+  shared_ptr<linphone::Address> addressGet = core->interpretUrl(Utils::appStringToCoreString(args["sip-address"]));
+  addressGet->clean();
+  string addressGetClean = addressGet->asString();
+  if(addressGetClean != identity){
+    qWarning() << QStringLiteral("received different sip address from identity : `%1 != %2`.")
+                  .arg(Utils::coreStringToAppString(identity)).arg(Utils::coreStringToAppString(addressGetClean));
+    return;
+  }
+
+  shared_ptr<linphone::Conference> conference;
+  const QString &id =args["conference-id"];
+
   if(core->getConference()!=NULL){ //TODO change this condition, use isInConference() (the conference needs to be initiate)
     conference = core->getConference();
-    if(conference->getId()==Utils::appStringToCoreString(args["conference-id"])){
-      qInfo() << QStringLiteral("The conference `%1` already exists.").arg(Utils::coreStringToAppString(conference->getId()));
+
+    if(conference->getId()==Utils::appStringToCoreString(id)){
+      qInfo() << QStringLiteral("The conference `%1` already exists.").arg(id);
       //TODO set the vew to the "waiting call vew"
       return;
     }
-    qInfo() << QStringLiteral("there is already a conference: `%1`.").arg(Utils::coreStringToAppString(conference->getId()));
-    qInfo() << QStringLiteral("deleting Conference: `%1`.").arg(Utils::coreStringToAppString(conference->getId()));
-    //TODO remove participants of the previous conference and delete it
+
+    const QString &currentId = Utils::coreStringToAppString(conference->getId());
+    qInfo() << QStringLiteral("there is already a conference: `%1`.").arg(currentId);
+    qInfo() << QStringLiteral("deleting Conference: `%1`.").arg(currentId);
+    core->terminateConference();
   }
+
   conference = core->createConferenceWithParams(
         core->createConferenceParams()
         );
-
-  conference->setId(Utils::appStringToCoreString(args["conference-id"]));
-  qInfo() << QStringLiteral("conference created with id: `%1`.").arg(Utils::coreStringToAppString(conference->getId()));
+  conference->setId(Utils::appStringToCoreString(id));
+  qInfo() << QStringLiteral("conference created with id: `%1`.").arg(id);
+  if(core->enterConference()==-1){
+    qWarning() << QStringLiteral("Unable to join the created conference: `%1`.").arg(id);
+  }
   //TODO set the vew to the "waiting call vew"
   //initiate conference.
 }
