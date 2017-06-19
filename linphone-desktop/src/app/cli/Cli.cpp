@@ -51,29 +51,33 @@ static void cliJoinConference (const QHash<QString, QString> &args) {
 
 static void cliInitiateConference (const QHash<QString, QString> &args) {
   shared_ptr<linphone::Core> core= CoreManager::getInstance()->getCore();
-  string identity = core->getIdentity();
-  shared_ptr<linphone::Address> addressGet = core->interpretUrl(Utils::appStringToCoreString(args["sip-address"]));
-  addressGet->clean();
-  string addressGetClean = addressGet->asString();
-  if(addressGetClean != identity){
-    qWarning() << QStringLiteral("received different sip address from identity : `%1 != %2`.")
-                  .arg(Utils::coreStringToAppString(identity)).arg(Utils::coreStringToAppString(addressGetClean));
-    return;
+
+  {
+    string identity = core->getIdentity();
+    shared_ptr<linphone::Address> addressGet = core->interpretUrl(::Utils::appStringToCoreString(args["sip-address"]));
+    addressGet->clean();
+    string sipAddress = addressGet->asString();
+    if(sipAddress != identity){
+      qWarning() << QStringLiteral("received different sip address from identity : `%1 != %2`.")
+                    .arg(::Utils::coreStringToAppString(identity)).arg(::Utils::coreStringToAppString(sipAddress));
+      return;
+    }
   }
 
   shared_ptr<linphone::Conference> conference;
   const QString &id =args["conference-id"];
 
-  if(core->getConference()!=NULL){ //TODO change this condition, use isInConference() (the conference needs to be initiate)
+  if (core->getConference()!=nullptr) { //TODO change this condition, use isInConference() (the conference needs to be initiate)
     conference = core->getConference();
 
-    if(conference->getId()==Utils::appStringToCoreString(id)){
+    if (conference->getId()==::Utils::appStringToCoreString(id)) {
       qInfo() << QStringLiteral("The conference `%1` already exists.").arg(id);
       //TODO set the vew to the "waiting call vew"
       return;
     }
 
-    const QString &currentId = Utils::coreStringToAppString(conference->getId());
+    //TODO dangerous
+    const QString &currentId = ::Utils::coreStringToAppString(conference->getId());
     qInfo() << QStringLiteral("there is already a conference: `%1`.").arg(currentId);
     qInfo() << QStringLiteral("deleting Conference: `%1`.").arg(currentId);
     core->terminateConference();
@@ -82,9 +86,9 @@ static void cliInitiateConference (const QHash<QString, QString> &args) {
   conference = core->createConferenceWithParams(
         core->createConferenceParams()
         );
-  conference->setId(Utils::appStringToCoreString(id));
+  conference->setId(::Utils::appStringToCoreString(id));
   qInfo() << QStringLiteral("conference created with id: `%1`.").arg(id);
-  if(core->enterConference()==-1){
+  if (core->enterConference()==-1) {
     qWarning() << QStringLiteral("Unable to join the created conference: `%1`.").arg(id);
   }
   //TODO set the vew to the "waiting call vew"
@@ -114,16 +118,16 @@ void Cli::Command::execute (const QHash<QString, QString> &args) {
 void Cli::Command::executeUri(shared_ptr<linphone::Address> address){
 
   QHash<QString, QString> args;
-  args["sip-address"] = Utils::coreStringToAppString(address->asString());
+  args["sip-address"] = ::Utils::coreStringToAppString(address->asString());
   for (const auto &argName : mArgsScheme.keys()) {
-    if(Utils::appStringToCoreString(argName)!="sip-address"){
-      if(address->getHeader(Utils::appStringToCoreString(argName)).empty() &&
+    if(::Utils::appStringToCoreString(argName)!="sip-address"){
+      if(address->getHeader(::Utils::appStringToCoreString(argName)).empty() &&
          !mArgsScheme[argName].isOptional) {
         qWarning() << QStringLiteral("Missing argument for method: `%1 (%2)`.")
             .arg(mFunctionName).arg(argName);
         return;
       }
-      args[argName] = Utils::coreStringToAppString(address->getHeader(Utils::appStringToCoreString(argName)));
+      args[argName] = ::Utils::coreStringToAppString(address->getHeader(::Utils::appStringToCoreString(argName)));
     }
   }
   (*mFunction)(args);
@@ -165,11 +169,11 @@ void Cli::addCommand (const QString &functionName, const QString &description, F
 void Cli::executeCommand (const QString &command) noexcept {
 
   //tests if the command is a sip uri.
-  shared_ptr<linphone::Address> address = linphone::Factory::get()->createAddress(Utils::appStringToCoreString(command));
+  shared_ptr<linphone::Address> address = linphone::Factory::get()->createAddress(::Utils::appStringToCoreString(command));
   if (address && (address->getScheme()=="sip" || address->getScheme()=="sip-linphone")) {
 
-    const QString methodName = Utils::coreStringToAppString(address->getHeader("method")).isEmpty() ?
-          QStringLiteral("call") : Utils::coreStringToAppString(address->getHeader("method"));
+    const QString methodName = ::Utils::coreStringToAppString(address->getHeader("method")).isEmpty() ?
+          QStringLiteral("call") : ::Utils::coreStringToAppString(address->getHeader("method"));
 
     if(!methodName.isEmpty() && !mCommands.contains(methodName)){
       qWarning() << QStringLiteral("method unknown");
@@ -182,7 +186,7 @@ void Cli::executeCommand (const QString &command) noexcept {
   }
 
   if (address && !address->getScheme().empty()){
-    qWarning() << QStringLiteral("bad uri protocol, different from sip or sip-linphone: `%1`").arg(Utils::coreStringToAppString(address->getScheme()));
+    qWarning() << QStringLiteral("bad uri protocol, different from sip or sip-linphone: `%1`").arg(::Utils::coreStringToAppString(address->getScheme()));
     return;
   }
 

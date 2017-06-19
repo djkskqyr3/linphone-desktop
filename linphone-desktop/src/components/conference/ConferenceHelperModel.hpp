@@ -53,6 +53,10 @@ public:
 
   QHash<int, QByteArray> roleNames () const override;
 
+  ConferenceAddModel *getAddModel () const {
+    return mConferenceAddModel;
+  }
+
   Q_INVOKABLE void setFilter (const QString &pattern);
 
 protected:
