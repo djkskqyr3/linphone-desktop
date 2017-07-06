@@ -42,6 +42,10 @@ static void cliShow (const QHash<QString, QString> &) {
 }
 
 static void cliCall (const QHash<QString, QString> &args) {
+  if (!CoreManager::getInstance() || !CoreManager::getInstance()->getCallsListModel()) {
+    qWarning() << QStringLiteral("CoreManager not instantiated.");
+    return;
+  }
   CoreManager::getInstance()->getCallsListModel()->launchAudioCall(args["sip-address"]);
 }
 

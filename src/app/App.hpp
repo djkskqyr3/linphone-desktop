@@ -28,6 +28,8 @@
 
 #include "../components/notifier/Notifier.hpp"
 #include "../components/other/colors/Colors.hpp"
+#include "../components/core/CoreManager.hpp"
+#include "../components/core/CoreHandlers.hpp"
 #include "single-application/SingleApplication.hpp"
 
 #define APP_CODE_RESTART 1000
@@ -35,6 +37,8 @@
 // =============================================================================
 
 class QCommandLineParser;
+class CoreManager;
+class CoreHandlers;
 
 class Cli;
 class DefaultTranslator;
@@ -55,6 +59,32 @@ public:
 
   QString getPositionalArgument ();
   void executeCommand (const QString &command);
+  void executeCommandURL ();
+
+  bool event(QEvent *event) override
+  {
+  if (event->type() == QEvent::FileOpen) {
+    const QString url = static_cast<QFileOpenEvent *>(event)->url().toString();
+      if (isPrimary()) {
+          if (mURL.isEmpty()) {
+            mURL = url;
+            QObject::connect(
+              CoreManager::getInstance()->getHandlers().get(),
+              &CoreHandlers::coreStarted,
+              this,
+              &App::executeCommandURL
+            );
+          } else {
+            executeCommand(url);
+          }
+      }
+      if (isSecondary()) {
+        sendMessage(url.toLocal8Bit(), -1);
+      }
+  }
+    return SingleApplication::event(event);
+  }
+
 
   QQmlEngine *getEngine () {
     return mEngine;
@@ -136,6 +166,8 @@ private:
   Colors *mColors = nullptr;
 
   Cli *mCli = nullptr;
+
+  QString mURL = QString("");
 };
 
 #endif // APP_H_

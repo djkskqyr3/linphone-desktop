@@ -165,7 +165,6 @@ void App::initContentApp () {
         qInfo() << QStringLiteral("Received command from other application: `%1`.").arg(command);
 				mCli->executeCommand(command);
       });
-
     // Add plugins directory.
     addLibraryPath(::Utils::coreStringToAppString(Paths::getPluginsDirPath()));
     qInfo() << QStringLiteral("Library paths:") << libraryPaths();
@@ -240,7 +239,22 @@ QString App::getPositionalArgument () {
 // -----------------------------------------------------------------------------
 
 void App::executeCommand (const QString &command) {
-	mCli->executeCommand(command);
+    if (mCli)
+      mCli->executeCommand(command);
+}
+
+// -----------------------------------------------------------------------------
+
+void App::executeCommandURL () {
+    const QString url = mURL;
+    if (mCli)
+      mCli->executeCommand(url);
+    QObject::disconnect(
+      CoreManager::getInstance()->getHandlers().get(),
+      &CoreHandlers::coreStarted,
+      this,
+      &App::executeCommandURL
+    );
 }
 
 // -----------------------------------------------------------------------------
@@ -583,4 +597,3 @@ void App::quit () {
 
   QApplication::quit();
 }
-
