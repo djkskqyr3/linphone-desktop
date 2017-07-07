@@ -65,22 +65,24 @@ public:
   {
   if (event->type() == QEvent::FileOpen) {
     const QString url = static_cast<QFileOpenEvent *>(event)->url().toString();
-      if (isPrimary()) {
-          if (mURL.isEmpty()) {
-            mURL = url;
-            QObject::connect(
-              CoreManager::getInstance()->getHandlers().get(),
-              &CoreHandlers::coreStarted,
-              this,
-              &App::executeCommandURL
-            );
-          } else {
-            executeCommand(url);
-          }
+    if (isPrimary()) {
+      if (mURL.isEmpty()) {
+        mURL = url;
+        QObject::connect(
+          CoreManager::getInstance()->getHandlers().get(),
+          &CoreHandlers::coreStarted,
+          this,
+          &App::executeCommandURL
+        );
+      } else {
+        executeCommand(url);
       }
-      if (isSecondary()) {
-        sendMessage(url.toLocal8Bit(), -1);
-      }
+    }
+    if (isSecondary()) {
+        //TODO : the event is'nt catch on os x because the secondary is killed before.
+        //And the browser may recognize it and don't send open-url event.
+      sendMessage(url.toLocal8Bit(), -1);
+    }
   }
     return SingleApplication::event(event);
   }
