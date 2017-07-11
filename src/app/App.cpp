@@ -239,22 +239,8 @@ QString App::getPositionalArgument () {
 // -----------------------------------------------------------------------------
 
 void App::executeCommand (const QString &command) {
-    if (mCli)
+	  if (mCli)
       mCli->executeCommand(command);
-}
-
-// -----------------------------------------------------------------------------
-
-void App::executeCommandURL () {
-    const QString url = mURL;
-    if (mCli)
-      mCli->executeCommand(url);
-    QObject::disconnect(
-      CoreManager::getInstance()->getHandlers().get(),
-      &CoreHandlers::coreStarted,
-      this,
-      &App::executeCommandURL
-    );
 }
 
 // -----------------------------------------------------------------------------

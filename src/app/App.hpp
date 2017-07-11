@@ -58,26 +58,15 @@ public:
   void initContentApp ();
 
   QString getPositionalArgument ();
-  void executeCommand (const QString &command);
-  void executeCommandURL ();
+	void executeCommand (const QString &command);
 
-  bool event(QEvent *event) override
+	bool event(QEvent *event) override
   {
   if (event->type() == QEvent::FileOpen) {
     const QString url = static_cast<QFileOpenEvent *>(event)->url().toString();
-    if (isPrimary()) {
-      if (mURL.isEmpty()) {
-        mURL = url;
-        QObject::connect(
-          CoreManager::getInstance()->getHandlers().get(),
-          &CoreHandlers::coreStarted,
-          this,
-          &App::executeCommandURL
-        );
-      } else {
-        executeCommand(url);
-      }
-    }
+		if (isPrimary()) {
+			executeCommand(url);
+		}
     if (isSecondary()) {
         //TODO : the event is'nt catch on os x because the secondary is killed before.
         //And the browser may recognize it and don't send open-url event.
@@ -169,7 +158,6 @@ private:
 
   Cli *mCli = nullptr;
 
-  QString mURL = QString("");
 };
 
 #endif // APP_H_

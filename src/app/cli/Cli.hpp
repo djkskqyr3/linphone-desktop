@@ -47,34 +47,49 @@ class Cli : public QObject {
     bool isOptional;
   };
 
-  class Command {
+	class Command {
 public:
-    Command () = default;
-    Command (const QString &functionName, const QString &description, Function function, const QHash<QString, Argument> &argsScheme);
+		Command () = default;
+		Command (const QString &functionName, const QString &description, Function function, const QHash<QString, Argument> &argsScheme, Cli *parent);
 
     void execute (const QHash<QString, QString> &args);
 
-    void executeUri(std::shared_ptr<linphone::Address> address);
+		void executeUri(std::shared_ptr<linphone::Address> address);
 
-    bool argNameExists (const QString &argName) {
+		bool argNameExists (const QString &argName) {
       return mArgsScheme.contains(argName);
-    }
+		}
 
+		Cli* getParent() { return mParent; }
+
+		QHash<QString, QString> getArgs() { return mArgs; }
+
+		Function getFunction() { return mFunction; }
 private:
+		QHash <QString, QString> mArgs;
     QString mFunctionName;
     QString mDescription;
     Function mFunction = nullptr;
     QHash<QString, Argument> mArgsScheme;
+		Cli *mParent;
   };
 
 public:
   Cli (QObject *parent = Q_NULLPTR);
   ~Cli () = default;
 
-  void executeCommand (const QString &command) noexcept;
+	void executeCommand (const QString &command) noexcept;
+
+	void setCurrentCommand (QString currentCmd) { currentCommand = currentCmd; }
+
+	QString getCurrentCommand () { return currentCommand; }
+
+	QHash<QString, Command> getCommands() { return mCommands; }
 
 private:
-  void addCommand (const QString &functionName, const QString &description, Function function, const QHash<QString, Argument> &argsScheme = {}) noexcept;
+	QString currentCommand;
+
+	void addCommand (Cli *parent, const QString &functionName, const QString &description, Function function, const QHash<QString, Argument> &argsScheme = {}) noexcept;
 
   const QString parseFunctionName (const QString &command) noexcept;
   const QHash<QString, QString> parseArgs (const QString &command, const QString functionName, bool &soFarSoGood) noexcept;

@@ -112,6 +112,8 @@ public:
     return mInstance;
   }
 
+	bool isInitialized () { return isInit; }
+
   // ---------------------------------------------------------------------------
 
   // Must be used in a qml scene.
@@ -167,6 +169,8 @@ private:
   QMutex mMutexVideoRender;
 
   static CoreManager *mInstance;
+
+	bool isInit = false;
 };
 
 #endif // CORE_MANAGER_H_

@@ -62,7 +62,7 @@ CoreManager::CoreManager (QObject *parent, const QString &configPath) :
     mInstance->mSipAddressesModel = new SipAddressesModel(mInstance);
     mInstance->mSettingsModel = new SettingsModel(mInstance);
     mInstance->mAccountSettingsModel = new AccountSettingsModel(mInstance);
-
+		mInstance->isInit = true;
     emit mInstance->coreStarted();
   });
 

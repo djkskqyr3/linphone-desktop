@@ -42,11 +42,7 @@ static void cliShow (const QHash<QString, QString> &) {
 }
 
 static void cliCall (const QHash<QString, QString> &args) {
-  if (!CoreManager::getInstance() || !CoreManager::getInstance()->getCallsListModel()) {
-    qWarning() << QStringLiteral("CoreManager not instantiated.");
-    return;
-  }
-  CoreManager::getInstance()->getCallsListModel()->launchAudioCall(args["sip-address"]);
+	CoreManager::getInstance()->getCallsListModel()->launchAudioCall(args["sip-address"]);
 }
 
 static void cliJoinConference (const QHash<QString, QString> &args) {
@@ -101,16 +97,17 @@ static void cliInitiateConference (const QHash<QString, QString> &args) {
 
 // =============================================================================
 
-Cli::Command::Command (
-  const QString &functionName,
+Cli::Command::Command (const QString &functionName,
   const QString &description,
   Cli::Function function,
-  const QHash<QString, Cli::Argument> &argsScheme
+  const QHash<QString, Cli::Argument> &argsScheme,
+  Cli *parent
 ) :
   mFunctionName(functionName),
   mDescription(description),
   mFunction(function),
-  mArgsScheme(argsScheme) {}
+  mArgsScheme(argsScheme),
+  mParent(parent) {}
 
 void Cli::Command::execute (const QHash<QString, QString> &args) {
   for (const auto &argName : mArgsScheme.keys()) {
@@ -134,12 +131,25 @@ void Cli::Command::executeUri(shared_ptr<linphone::Address> address){
          !mArgsScheme[argName].isOptional) {
         qWarning() << QStringLiteral("Missing argument for method: `%1 (%2)`.")
             .arg(mFunctionName).arg(argName);
-        return;
+				return;
       }
       args[argName] = ::Utils::coreStringToAppString(address->getHeader(::Utils::appStringToCoreString(argName)));
     }
-  }
-  (*mFunction)(args);
+	}
+	if (CoreManager::getInstance()->isInitialized()) {
+		(*mFunction)(args);
+	} else {
+		mArgs=args;
+		Cli *parent = this->getParent();
+		parent->setCurrentCommand(mFunctionName);
+		QObject::connect(
+		      CoreManager::getInstance()->getHandlers().get(),
+		      &CoreHandlers::coreStarted,
+		      parent,[parent]{
+			Command cmd = (parent->getCommands())[parent->getCurrentCommand()];
+			(*cmd.getFunction())(cmd.getArgs());}
+		);
+	}
 }
 
 
@@ -151,14 +161,14 @@ QRegExp Cli::mRegExpArgs("(?:(?:(\\w+)\\s*)=\\s*(?:\"([^\"\\\\]*(?:\\\\.[^\"\\\\
 QRegExp Cli::mRegExpFunctionName("^\\s*([a-z-]+)\\s*");
 
 Cli::Cli (QObject *parent) : QObject(parent) {
-  addCommand("show", tr("showFunctionDescription"), ::cliShow);
-  addCommand("call", tr("showFunctionCall"), ::cliCall, {
+	addCommand(this, "show", tr("showFunctionDescription"), ::cliShow);
+	addCommand(this, "call", tr("showFunctionCall"), ::cliCall, {
     { "sip-address", { } }
   });
-  addCommand("join-conference", tr("joinConferenceFunctionDescription"), ::cliJoinConference, {
+	addCommand(this, "join-conference", tr("joinConferenceFunctionDescription"), ::cliJoinConference, {
     { "sip-address", { } }, { "conference-id", { } }
   });
-  addCommand("initiate-conference", tr("initiateConferenceFunctionDescription"), ::cliInitiateConference, {
+	addCommand(this, "initiate-conference", tr("initiateConferenceFunctionDescription"), ::cliInitiateConference, {
     { "sip-address", { } }, { "conference-id", { } }
   });
 }
@@ -167,15 +177,15 @@ Cli::Cli (QObject *parent) : QObject(parent) {
 // -----------------------------------------------------------------------------
 
 void Cli::addCommand (
+  Cli *parent,
   const QString &functionName,
   const QString &description,
   Function function,
-  const QHash<QString, Argument> &argsScheme
-) noexcept {
+  const QHash<QString, Argument> &argsScheme) noexcept {
   if (mCommands.contains(functionName))
     qWarning() << QStringLiteral("Command already exists: `%1`.").arg(functionName);
   else
-    mCommands[functionName] = Cli::Command(functionName, description, function, argsScheme);
+		mCommands[functionName] = Cli::Command(functionName, description, function, argsScheme, parent);
 }
 
 // -----------------------------------------------------------------------------
