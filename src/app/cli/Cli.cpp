@@ -71,7 +71,7 @@ static void cliInitiateConference (const QHash<QString, QString> &args) {
     conference = core->getConference();
 
     if (conference->getId()==::Utils::appStringToCoreString(id)) {
-      qInfo() << QStringLiteral("The conference `%1` already exists.").arg(id);
+			qInfo() << QStringLiteral("Conference `%1` already exists.").arg(id);
       //TODO set the vew to the "waiting call vew"
       return;
     }
@@ -89,7 +89,7 @@ static void cliInitiateConference (const QHash<QString, QString> &args) {
   conference->setId(::Utils::appStringToCoreString(id));
   qInfo() << QStringLiteral("conference created with id: `%1`.").arg(id);
   if (core->enterConference()==-1) {
-    qWarning() << QStringLiteral("Unable to join the created conference: `%1`.").arg(id);
+		qWarning() << QStringLiteral("Unable to join created conference: `%1`.").arg(id);
   }
   //TODO set the vew to the "waiting call vew"
   //initiate conference.
@@ -112,7 +112,7 @@ Cli::Command::Command (const QString &functionName,
 void Cli::Command::execute (const QHash<QString, QString> &args) {
   for (const auto &argName : mArgsScheme.keys()) {
     if (!args.contains(argName) && !mArgsScheme[argName].isOptional) {
-      qWarning() << QStringLiteral("Missing argument for command: `%1 (%2)`.")
+			qWarning() << QStringLiteral("command %1 misses argument %2.")
         .arg(mFunctionName).arg(argName);
       return;
     }
@@ -129,13 +129,16 @@ void Cli::Command::executeUri(shared_ptr<linphone::Address> address){
     if(::Utils::appStringToCoreString(argName)!="sip-address"){
       if(address->getHeader(::Utils::appStringToCoreString(argName)).empty() &&
          !mArgsScheme[argName].isOptional) {
-        qWarning() << QStringLiteral("Missing argument for method: `%1 (%2)`.")
+				qWarning() << QStringLiteral("method %1 misses argument %2.")
             .arg(mFunctionName).arg(argName);
 				return;
       }
       args[argName] = ::Utils::coreStringToAppString(address->getHeader(::Utils::appStringToCoreString(argName)));
     }
 	}
+
+	//TODO : check invalid args
+
 	if (CoreManager::getInstance()->isInitialized()) {
 		(*mFunction)(args);
 	} else {

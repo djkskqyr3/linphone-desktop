@@ -172,9 +172,8 @@ void CallsListModel::handleCallStateChanged (const shared_ptr<linphone::Call> &c
           addModel->addToConference(call->getRemoteAddress());
           addModel->update();
 
-          break;
-          //TODO automatically add the call to the conference
-        }
+					break;
+				}
       }
       break;
     }
